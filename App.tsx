@@ -3,6 +3,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import { PRODUCTS } from './constants'; 
@@ -239,13 +241,6 @@ const SuspendUserModal: React.FC<{ isOpen: boolean; onClose: () => void; onConfi
 };
 
 const SellerRegistrationPage: React.FC<{ user: UserState | null; onLoginClick: () => void }> = ({ user, onLoginClick }) => {
-    // ... (content same as previous, abbreviated for brevity as no changes requested here)
-    // For XML response, I will include the full existing content of SellerRegistrationPage to be safe, 
-    // or rely on the previous context. 
-    // Since the instruction says "ONLY return files... that need to be updated", and I'm updating App.tsx, 
-    // I must return the FULL content of App.tsx.
-    
-    // (Re-implementing SellerRegistrationPage content for completeness in App.tsx)
     const [provinces, setProvinces] = useState<LocationCode[]>([]);
     const [cities, setCities] = useState<LocationCode[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -422,9 +417,7 @@ const SellerRegistrationPage: React.FC<{ user: UserState | null; onLoginClick: (
     );
 };
 
-// ... (Other Modals: TrackingModal, AuthModal, CheckoutModal, Dashboard, CartPage, AboutPage, ProfilePage - Keep as is)
 const TrackingModal: React.FC<{ isOpen: boolean; onClose: () => void; trackingNumber: string; status: OrderStatus }> = ({ isOpen, onClose, trackingNumber, status }) => {
-    // ... same as before
     const [events, setEvents] = useState<TrackingEvent[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -456,16 +449,7 @@ const TrackingModal: React.FC<{ isOpen: boolean; onClose: () => void; trackingNu
     );
 };
 
-// ... Include AuthModal, CheckoutModal, Dashboard, CartPage, AboutPage, ProfilePage fully ... 
-// (For brevity in the thought process I skipped listing them, but for the output I need to ensure they exist or use references if possible. 
-// Given the prompt "ONLY return files... that need to be updated", I should include the whole file since I can't partially update. 
-// I will just include the changed components `ProductDetailsPage`, `ProductCard`, and `App`. 
-// I will include the other components collapsed or unchanged.)
-
 const AuthModal: React.FC<any> = ({ isOpen, onClose, onLoginSuccess }) => {
-    // ... (Keep existing implementation)
-    // To save space in response, I am omitting the body of AuthModal, CheckoutModal, Dashboard, CartPage, AboutPage, ProfilePage unless changed. 
-    // Wait, I must provide full file content. I'll copy the provided content for these components.
     useBodyScrollLock(isOpen);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [isLoading, setIsLoading] = useState(false);
@@ -781,7 +765,6 @@ const AuthModal: React.FC<any> = ({ isOpen, onClose, onLoginSuccess }) => {
 };
 
 const CheckoutModal: React.FC<any> = ({ isOpen, onClose, cart, onCheckoutSubmit, user, onSaveAddress }) => {
-    // ... (Keep existing implementation)
     useBodyScrollLock(isOpen);
     const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('Standard');
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD');
@@ -926,11 +909,6 @@ const CheckoutModal: React.FC<any> = ({ isOpen, onClose, cart, onCheckoutSubmit,
 
 // ... Include Dashboard, CartPage, AboutPage, ProfilePage fully ...
 const Dashboard: React.FC<any> = ({ user, products, onUpdateProfile, onRefreshGlobalData }) => {
-    // ... (Keep existing implementation)
-    // To minimize output size while following instructions to return full file content for changed files:
-    // I am including the full content of App.tsx which includes these components.
-    
-    // (Re-pasting Dashboard content)
     const [activeTab, setActiveTab] = useState(user?.role === 'admin' ? 'applications' : 'products');
     const [isAddProductOpen, setIsAddProductOpen] = useState(false);
     const [isProductManagerOpen, setIsProductManagerOpen] = useState(false);
@@ -1319,7 +1297,6 @@ const Dashboard: React.FC<any> = ({ user, products, onUpdateProfile, onRefreshGl
 };
 
 const CartPage: React.FC<any> = ({ cart, onUpdateQuantity, onRemove, onCheckoutClick, onContinueShopping }) => {
-    // ... (Keep existing implementation)
     const total = cart.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0);
     return (
         <div className="max-w-7xl mx-auto px-4 py-12 animate-fade-in-up">
@@ -1383,7 +1360,6 @@ const CartPage: React.FC<any> = ({ cart, onUpdateQuantity, onRemove, onCheckoutC
 };
 
 const AboutPage: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) => (
-    // ... (Keep existing implementation)
     <div className="bg-brand-cream min-h-screen animate-fade-in-up overflow-x-hidden">
         {/* Hero Section */}
         <div className="relative h-[80vh] overflow-hidden">
@@ -1533,8 +1509,6 @@ const AboutPage: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigat
 );
 
 const ProfilePage: React.FC<any> = ({ user, onUpdateProfile, onNavigate }) => {
-    // ... (Keep existing implementation)
-    // Same as above, assuming content is largely the same.
     const isSellerOrAdmin = user?.role === 'seller' || user?.role === 'admin';
     const [orders, setOrders] = useState<Order[]>([]);
     const [activeTab, setActiveTab] = useState(isSellerOrAdmin ? 'shop' : 'orders');
@@ -2525,10 +2499,14 @@ const ProductDetailsPage: React.FC<any> = ({ product, onAddToCart, onNavigate, u
                 <img src={selectedVariation?.image || product.image} className="w-full aspect-square object-cover rounded-2xl bg-stone-100 shadow-md" />
                 <div>
                     <h1 className="text-4xl font-serif font-bold mb-2 text-stone-900">{product.name} {selectedVariation && `- ${selectedVariation.name}`}</h1>
-                    <div className="flex items-center gap-2 mb-6">
-                        <StarRating rating={product.rating} size="w-5 h-5" />
-                        <span className="font-bold text-stone-900 text-lg">{product.rating}</span> 
-                        <span className="text-stone-400">({reviews.length} reviews)</span>
+                    <div className="flex items-center gap-4 mb-6">
+                         <div className="flex items-end border-b-2 border-stone-800 pb-1 px-1">
+                            <span className="text-3xl font-bold text-stone-900 leading-none">{product.rating ? Number(product.rating).toFixed(1) : '0.0'}</span>
+                         </div>
+                         <div className="flex flex-col">
+                             <StarRating rating={product.rating || 0} size="w-5 h-5" />
+                             <span className="text-xs text-stone-500 mt-0.5">{reviews.length} reviews</span>
+                         </div>
                     </div>
                     
                     <div className="mb-8">
@@ -2744,7 +2722,6 @@ const ProductCard: React.FC<{ product: Product; onClick: () => void }> = ({ prod
 
 // ... AddProductModal, ProductManagerModal, MarketplacePage, HomePage ... (Keep existing implementation)
 const AddProductModal: React.FC<any> = ({ isOpen, onClose, onAddProduct, user, editingProduct }) => {
-    // ... same as before
     interface TempVariation {
       id: string;
       name: string;
@@ -2988,7 +2965,6 @@ const MarketplacePage: React.FC<any> = ({ products, onNavigate, onAddToCart }) =
 };
 
 const HomePage: React.FC<any> = ({ products, onNavigate, onAddToCart, user }) => {
-    // ... (Keep existing implementation)
     // Seller View
     if (user?.role === 'seller') {
         const sellerProducts = products.filter((p: any) => p.sellerId === user.uid);
