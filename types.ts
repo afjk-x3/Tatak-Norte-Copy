@@ -47,6 +47,8 @@ export interface Review {
   rating: number;
   comment: string;
   createdAt: any;
+  sellerReply?: string;
+  sellerReplyCreatedAt?: any;
 }
 
 export interface Variation {

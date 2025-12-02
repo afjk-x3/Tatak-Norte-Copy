@@ -1,5 +1,6 @@
 
 
+
 import firebase from 'firebase/compat/app';
 import { db, storage, isFirebaseConfigured } from '../firebaseConfig';
 import { Product, UserRole, UserProfile, Order, CartItem, OrderStatus, Review, PaymentMethod, DeliveryMethod, Address, Conversation, ChatMessage, TrackingEvent, Variation, SellerApplication } from '../types';
@@ -157,6 +158,64 @@ export const addProductReview = async (productId: string, userId: string, userNa
         return true;
     } catch (error) {
         console.error("Error adding review:", error);
+        return false;
+    }
+};
+
+export const replyToReview = async (reviewId: string, replyText: string): Promise<boolean> => {
+    if (!isFirebaseConfigured()) return false;
+    try {
+        await db.collection(REVIEWS_COLLECTION).doc(reviewId).update({
+            sellerReply: replyText,
+            sellerReplyCreatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return true;
+    } catch (error) {
+        console.error("Error replying to review:", error);
+        return false;
+    }
+};
+
+export const deleteReview = async (reviewId: string, productId: string, ratingValue: number): Promise<boolean> => {
+    if (!isFirebaseConfigured()) return false;
+    try {
+        const batch = db.batch();
+        
+        // 1. Delete the review document
+        const reviewRef = db.collection(REVIEWS_COLLECTION).doc(reviewId);
+        batch.delete(reviewRef);
+
+        // 2. Update Product Stats (Reverse calculation)
+        const productRef = db.collection(PRODUCTS_COLLECTION).doc(productId);
+        const productDoc = await productRef.get();
+
+        if (productDoc.exists) {
+            const product = productDoc.data() as Product;
+            const currentRating = product.rating || 0;
+            const currentReviews = product.reviews || 0;
+
+            if (currentReviews <= 1) {
+                // If it's the last review, reset stats
+                batch.update(productRef, {
+                    rating: 0,
+                    reviews: 0
+                });
+            } else {
+                const newReviewsCount = currentReviews - 1;
+                // Formula: ( (OldAvg * OldCount) - DeletedValue ) / NewCount
+                const newRating = ((currentRating * currentReviews) - ratingValue) / newReviewsCount;
+                
+                batch.update(productRef, {
+                    rating: parseFloat(newRating.toFixed(1)),
+                    reviews: newReviewsCount
+                });
+            }
+        }
+
+        await batch.commit();
+        return true;
+    } catch (error) {
+        console.error("Error deleting review:", error);
         return false;
     }
 };
