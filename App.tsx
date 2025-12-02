@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import { PRODUCTS } from './constants'; 
@@ -2390,6 +2383,9 @@ const ProductDetailsPage: React.FC<any> = ({ product, onAddToCart, onNavigate, u
     const [newRating, setNewRating] = useState(5);
     const [newComment, setNewComment] = useState('');
     const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+    
+    // Pagination for Reviews
+    const [visibleReviewsCount, setVisibleReviewsCount] = useState(3);
 
     // Reply State (Map to handle multiple reply inputs)
     const [replyTextMap, setReplyTextMap] = useState<Record<string, string>>({});
@@ -2398,6 +2394,7 @@ const ProductDetailsPage: React.FC<any> = ({ product, onAddToCart, onNavigate, u
     useEffect(() => {
         if (product) {
             fetchProductReviews(product.id).then(setReviews);
+            setVisibleReviewsCount(3);
         }
     }, [product]);
     
@@ -2566,70 +2563,97 @@ const ProductDetailsPage: React.FC<any> = ({ product, onAddToCart, onNavigate, u
                 <div className="grid lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
                         {reviews.length > 0 ? (
-                            reviews.map((review) => (
-                                <div key={review.id} className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm relative group">
-                                    {isAdmin && (
-                                        <button 
-                                            onClick={() => handleDeleteReview(review)}
-                                            className="absolute top-4 right-4 p-2 text-stone-400 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors opacity-0 group-hover:opacity-100"
-                                            title="Delete Review (Admin)"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    )}
+                            <>
+                                {reviews.slice(0, visibleReviewsCount).map((review) => (
+                                    <div key={review.id} className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm relative group">
+                                        {isAdmin && (
+                                            <button 
+                                                onClick={() => handleDeleteReview(review)}
+                                                className="absolute top-4 right-4 p-2 text-stone-400 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Delete Review (Admin)"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
 
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-brand-light rounded-full flex items-center justify-center text-brand-blue font-bold">
-                                                {review.userName.charAt(0)}
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-brand-light rounded-full flex items-center justify-center text-brand-blue font-bold">
+                                                    {review.userName.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-stone-900 text-sm">{review.userName}</p>
+                                                    <StarRating rating={review.rating} size="w-3 h-3" />
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-bold text-stone-900 text-sm">{review.userName}</p>
-                                                <StarRating rating={review.rating} size="w-3 h-3" />
-                                            </div>
+                                            <span className="text-xs text-stone-400">
+                                                {review.createdAt?.seconds ? new Date(review.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
+                                            </span>
                                         </div>
-                                        <span className="text-xs text-stone-400">
-                                            {review.createdAt?.seconds ? new Date(review.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
-                                        </span>
+                                        <p className="text-stone-600 text-sm leading-relaxed mb-4">{review.comment}</p>
+
+                                        {/* Seller Reply Display */}
+                                        {review.sellerReply && (
+                                            <div className="ml-6 mt-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100 relative">
+                                                <CornerDownRight className="absolute -left-5 top-4 w-4 h-4 text-stone-300" />
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Store className="w-3 h-3 text-brand-blue" />
+                                                    <span className="text-xs font-bold text-brand-blue">Seller Response</span>
+                                                    <span className="text-[10px] text-stone-400">• {review.sellerReplyCreatedAt?.seconds ? new Date(review.sellerReplyCreatedAt.seconds * 1000).toLocaleDateString() : ''}</span>
+                                                </div>
+                                                <p className="text-xs text-stone-600 italic">{review.sellerReply}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Seller Reply Input */}
+                                        {isSeller && !review.sellerReply && (
+                                            <div className="mt-4 pt-4 border-t border-stone-100">
+                                                <div className="flex gap-2">
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="Write a response..." 
+                                                        className="flex-1 px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-brand-blue"
+                                                        value={replyTextMap[review.id] || ''}
+                                                        onChange={(e) => setReplyTextMap(prev => ({...prev, [review.id]: e.target.value}))}
+                                                    />
+                                                    <button 
+                                                        onClick={() => handleReply(review.id)}
+                                                        disabled={isReplyingMap[review.id] || !replyTextMap[review.id]}
+                                                        className="px-4 py-2 bg-stone-100 hover:bg-brand-blue hover:text-white text-stone-600 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                                                    >
+                                                        {isReplyingMap[review.id] ? 'Sending...' : 'Reply'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <p className="text-stone-600 text-sm leading-relaxed mb-4">{review.comment}</p>
+                                ))}
 
-                                    {/* Seller Reply Display */}
-                                    {review.sellerReply && (
-                                        <div className="ml-6 mt-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100 relative">
-                                            <CornerDownRight className="absolute -left-5 top-4 w-4 h-4 text-stone-300" />
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Store className="w-3 h-3 text-brand-blue" />
-                                                <span className="text-xs font-bold text-brand-blue">Seller Response</span>
-                                                <span className="text-[10px] text-stone-400">• {review.sellerReplyCreatedAt?.seconds ? new Date(review.sellerReplyCreatedAt.seconds * 1000).toLocaleDateString() : ''}</span>
-                                            </div>
-                                            <p className="text-xs text-stone-600 italic">{review.sellerReply}</p>
-                                        </div>
-                                    )}
-
-                                    {/* Seller Reply Input */}
-                                    {isSeller && !review.sellerReply && (
-                                        <div className="mt-4 pt-4 border-t border-stone-100">
-                                            <div className="flex gap-2">
-                                                <input 
-                                                    type="text" 
-                                                    placeholder="Write a response..." 
-                                                    className="flex-1 px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-brand-blue"
-                                                    value={replyTextMap[review.id] || ''}
-                                                    onChange={(e) => setReplyTextMap(prev => ({...prev, [review.id]: e.target.value}))}
-                                                />
-                                                <button 
-                                                    onClick={() => handleReply(review.id)}
-                                                    disabled={isReplyingMap[review.id] || !replyTextMap[review.id]}
-                                                    className="px-4 py-2 bg-stone-100 hover:bg-brand-blue hover:text-white text-stone-600 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
-                                                >
-                                                    {isReplyingMap[review.id] ? 'Sending...' : 'Reply'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ))
+                                {reviews.length > 3 && (
+                                    <div className="flex justify-center pt-2 pb-4">
+                                        {visibleReviewsCount < reviews.length ? (
+                                            <button 
+                                                onClick={() => setVisibleReviewsCount(prev => prev + 3)}
+                                                className="group flex items-center gap-2 px-6 py-3 bg-white border border-stone-200 rounded-full text-stone-600 font-bold text-sm hover:border-brand-blue hover:text-brand-blue hover:shadow-md transition-all"
+                                            >
+                                                View More Reviews 
+                                                <span className="text-xs font-normal text-stone-400 group-hover:text-brand-blue/70">
+                                                    ({reviews.length - visibleReviewsCount} more)
+                                                </span>
+                                                <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                onClick={() => setVisibleReviewsCount(3)}
+                                                className="group flex items-center gap-2 px-6 py-3 bg-white border border-stone-200 rounded-full text-stone-600 font-bold text-sm hover:border-brand-blue hover:text-brand-blue hover:shadow-md transition-all"
+                                            >
+                                                View Less Reviews
+                                                <ChevronUp className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <div className="p-10 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200 text-stone-500">
                                 No reviews yet. Be the first to share your experience!
