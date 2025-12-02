@@ -762,6 +762,9 @@ const CheckoutModal: React.FC<any> = ({ isOpen, onClose, cart, onCheckoutSubmit,
     const [selectedCityCode, setSelectedCityCode] = useState('');
     const [selectedCityName, setSelectedCityName] = useState('');
     const [selectedBarangayName, setSelectedBarangayName] = useState('');
+    
+    // NEW STATE
+    const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -808,11 +811,13 @@ const CheckoutModal: React.FC<any> = ({ isOpen, onClose, cart, onCheckoutSubmit,
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="bg-brand-cream rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-in shadow-2xl">
-                <div className="bg-white px-8 py-5 flex justify-between items-center border-b border-stone-100">
+                <div className="bg-white px-8 py-5 flex justify-between items-center border-b border-stone-100 shrink-0">
                     <div className="flex items-center gap-3"><ShoppingBag className="w-6 h-6 text-brand-blue" /><h2 className="font-serif font-bold text-2xl text-brand-blue">Checkout</h2></div>
                     <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors"><X className="w-6 h-6 text-stone-500" /></button>
                 </div>
+                
                 <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+                    {/* Left Side - Forms */}
                     <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8 bg-white lg:border-r border-stone-100">
                         {deliveryMethod === 'Standard' && (
                             <section>
@@ -843,11 +848,39 @@ const CheckoutModal: React.FC<any> = ({ isOpen, onClose, cart, onCheckoutSubmit,
                          <section><h3 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-4 flex items-center gap-2"><Truck className="w-4 h-4" /> Delivery Method</h3><div className="grid grid-cols-2 gap-4"><button onClick={() => setDeliveryMethod('Standard')} className={`p-4 rounded-xl border-2 text-left transition-all ${deliveryMethod === 'Standard' ? 'border-brand-blue bg-blue-50/50' : 'border-stone-100 hover:border-stone-200'}`}><div className="font-bold text-brand-blue mb-1">Standard Delivery</div><div className="text-sm text-stone-500">J&T Express (3-5 days)</div><div className="text-sm font-bold mt-2">₱120.00</div></button><button onClick={() => setDeliveryMethod('Pickup')} className={`p-4 rounded-xl border-2 text-left transition-all ${deliveryMethod === 'Pickup' ? 'border-brand-blue bg-blue-50/50' : 'border-stone-100 hover:border-stone-200'}`}><div className="font-bold text-brand-blue mb-1">Store Pickup</div><div className="text-sm text-stone-500">Pick up from artisan</div><div className="text-sm font-bold mt-2">Free</div></button></div></section>
                         <section><h3 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-4 flex items-center gap-2"><CreditCard className="w-4 h-4" /> Payment Method</h3><div className="space-y-3">{['COD', 'GCash', 'PayMaya'].map((method) => (<label key={method} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === method ? 'border-brand-blue bg-blue-50/50' : 'border-stone-100 hover:border-stone-200'}`}><input type="radio" name="payment" className="w-4 h-4 text-brand-blue focus:ring-brand-blue" checked={paymentMethod === method} onChange={() => setPaymentMethod(method as PaymentMethod)} /><span className="font-medium text-stone-900">{method === 'COD' ? 'Cash on Delivery' : method}</span></label>))}</div></section>
                     </div>
-                    <div className="w-full lg:w-96 bg-stone-50 p-6 lg:p-8 flex flex-col h-full lg:border-l border-stone-200">
-                        <h3 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-6">Order Summary</h3>
-                        <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-6">{cart.map((item: any, idx: number) => (<div key={idx} className="flex gap-4 items-start"><div className="w-16 h-16 rounded-lg bg-white border border-stone-200 overflow-hidden flex-shrink-0"><img src={item.image} className="w-full h-full object-cover" alt={item.name} /></div><div className="flex-1 min-w-0"><p className="text-sm font-bold text-stone-900 line-clamp-2">{item.name}</p>{item.selectedVariation && <p className="text-xs text-stone-500">{item.selectedVariation.name}</p>}<div className="flex justify-between mt-1"><p className="text-xs text-stone-500">Qty: {item.quantity}</p><p className="text-sm font-bold text-stone-900">₱{(item.price * item.quantity).toLocaleString()}</p></div></div></div>))}</div>
-                        <div className="border-t border-stone-200 pt-6 space-y-3"><div className="flex justify-between text-stone-600 text-sm"><span>Subtotal</span><span>₱{subtotal.toLocaleString()}</span></div><div className="flex justify-between text-stone-600 text-sm"><span>Shipping Fee</span><span>{shippingCost === 0 ? 'Free' : `₱${shippingCost.toLocaleString()}`}</span></div><div className="flex justify-between text-brand-blue font-bold text-xl pt-2 border-t border-stone-200 mt-2"><span>Total</span><span>₱{total.toLocaleString()}</span></div></div>
-                        <button onClick={handleSubmit} className="w-full mt-6 py-4 bg-brand-blue text-white rounded-xl font-bold hover:bg-blue-800 transition-colors shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">Place Order <ArrowRight className="w-5 h-5" /></button>
+
+                    {/* Right Side - Summary */}
+                    <div className="w-full lg:w-96 bg-stone-50 flex flex-col shrink-0 lg:h-full lg:border-l border-stone-200 shadow-[0_-4px_10px_-4px_rgba(0,0,0,0.1)] lg:shadow-none z-10">
+                        {/* Mobile Toggle */}
+                        <button 
+                            onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
+                            className="lg:hidden p-4 flex justify-between items-center bg-stone-50 border-b border-stone-200 w-full"
+                        >
+                            <div className="flex items-center gap-2 font-bold text-stone-700 text-sm uppercase tracking-wider">
+                                <span>Order Summary</span>
+                                {isSummaryExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                            </div>
+                            <span className="font-bold text-brand-blue">₱{total.toLocaleString()}</span>
+                        </button>
+
+                        <h3 className="hidden lg:block text-sm font-bold text-stone-400 uppercase tracking-wider mb-6 px-8 pt-8">Order Summary</h3>
+                        
+                        {/* Collapsible Content */}
+                        <div className={`flex flex-col flex-1 overflow-hidden transition-all duration-300 ease-in-out ${isSummaryExpanded ? 'max-h-[60vh] opacity-100' : 'max-h-0 opacity-0 lg:max-h-full lg:opacity-100'}`}>
+                             <div className="flex-1 overflow-y-auto px-6 lg:px-8 space-y-4 mb-6 pt-4 lg:pt-0">
+                                {cart.map((item: any, idx: number) => (<div key={idx} className="flex gap-4 items-start"><div className="w-16 h-16 rounded-lg bg-white border border-stone-200 overflow-hidden flex-shrink-0"><img src={item.image} className="w-full h-full object-cover" alt={item.name} /></div><div className="flex-1 min-w-0"><p className="text-sm font-bold text-stone-900 line-clamp-2">{item.name}</p>{item.selectedVariation && <p className="text-xs text-stone-500">{item.selectedVariation.name}</p>}<div className="flex justify-between mt-1"><p className="text-xs text-stone-500">Qty: {item.quantity}</p><p className="text-sm font-bold text-stone-900">₱{(item.price * item.quantity).toLocaleString()}</p></div></div></div>))}
+                             </div>
+                             <div className="border-t border-stone-200 pt-6 space-y-3 px-6 lg:px-8 pb-4">
+                                <div className="flex justify-between text-stone-600 text-sm"><span>Subtotal</span><span>₱{subtotal.toLocaleString()}</span></div>
+                                <div className="flex justify-between text-stone-600 text-sm"><span>Shipping Fee</span><span>{shippingCost === 0 ? 'Free' : `₱${shippingCost.toLocaleString()}`}</span></div>
+                                <div className="flex justify-between text-brand-blue font-bold text-xl pt-2 border-t border-stone-200 mt-2"><span>Total</span><span>₱{total.toLocaleString()}</span></div>
+                             </div>
+                        </div>
+
+                        {/* Button always visible */}
+                        <div className="p-6 lg:p-8 pt-4 lg:pt-0 bg-stone-50">
+                            <button onClick={handleSubmit} className="w-full py-4 bg-brand-blue text-white rounded-xl font-bold hover:bg-blue-800 transition-colors shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">Place Order <ArrowRight className="w-5 h-5" /></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1109,7 +1142,7 @@ const Dashboard: React.FC<any> = ({ user, products, onUpdateProfile, onRefreshGl
             )}
 
             {activeTab === 'products' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
                     {sellerProducts.length > 0 ? (
                         sellerProducts.map((p: any) => (
                             <div key={p.id} className="relative group">
@@ -1906,7 +1939,9 @@ const ProfilePage: React.FC<any> = ({ user, onUpdateProfile, onNavigate }) => {
                     </div>
 
                     <div className="lg:col-span-9">
-                        {activeTab === 'orders' && !isSellerOrAdmin && (
+                        {/* Profile Content Rendering (omitted full duplicate to save space, but logically here) */}
+                        {/* ... existing profile tab content ... */}
+                         {activeTab === 'orders' && !isSellerOrAdmin && (
                             <div className="space-y-6 animate-scale-in">
                                 <h2 className="text-2xl font-serif font-bold text-stone-900 mb-6">Order History</h2>
                                 {isLoadingOrders ? (
@@ -2464,25 +2499,25 @@ const ProductCard: React.FC<{ product: Product; onClick: () => void }> = ({ prod
     const displayPrice = min !== max ? `₱${min.toLocaleString()} - ₱${max.toLocaleString()}` : `₱${min.toLocaleString()}`;
 
     return (
-        <div onClick={onClick} className="group bg-white rounded-2xl border border-stone-100 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer">
+        <div onClick={onClick} className="group bg-white rounded-2xl border border-stone-100 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer h-full flex flex-col">
             <div className="aspect-[4/3] overflow-hidden bg-stone-100 relative">
                 <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 {product.variations && product.variations.length > 0 && (
-                     <span className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
+                     <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] md:text-xs px-2 py-1 rounded backdrop-blur-sm">
                          {product.variations.length} variants
                      </span>
                 )}
             </div>
-            <div className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                     <span className="text-xs font-bold text-brand-blue bg-blue-50 px-2 py-1 rounded-md uppercase tracking-wide">{product.category}</span>
-                     <div className="flex items-center gap-1 text-xs font-medium text-stone-500"><Star className="w-3 h-3 text-yellow-400 fill-current" /> {product.rating}</div>
+            <div className="p-3 md:p-4 flex flex-col flex-1">
+                <div className="flex justify-between items-start mb-2 gap-2">
+                     <span className="text-[10px] md:text-xs font-bold text-brand-blue bg-blue-50 px-2 py-1 rounded-md uppercase tracking-wide truncate">{product.category}</span>
+                     <div className="flex items-center gap-1 text-[10px] md:text-xs font-medium text-stone-500 shrink-0"><Star className="w-3 h-3 text-yellow-400 fill-current" /> {product.rating}</div>
                 </div>
-                <h3 className="font-serif font-bold text-lg text-stone-900 mb-1 line-clamp-1 group-hover:text-brand-blue transition-colors">{product.name}</h3>
-                <div className="flex justify-between items-center mt-3">
-                    <span className="font-bold text-stone-900">{displayPrice}</span>
-                    <button className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 group-hover:bg-brand-blue group-hover:text-white transition-colors">
-                        <Plus className="w-4 h-4" />
+                <h3 className="font-serif font-bold text-sm md:text-lg text-stone-900 mb-1 line-clamp-2 md:line-clamp-1 group-hover:text-brand-blue transition-colors flex-1">{product.name}</h3>
+                <div className="flex justify-between items-center mt-auto pt-3">
+                    <span className="font-bold text-sm md:text-base text-stone-900">{displayPrice}</span>
+                    <button className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 group-hover:bg-brand-blue group-hover:text-white transition-colors">
+                        <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     </button>
                 </div>
             </div>
@@ -2722,7 +2757,7 @@ const MarketplacePage: React.FC<any> = ({ products, onNavigate, onAddToCart }) =
             </div>
 
             {filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
                     {filteredProducts.map((product: any) => (
                         <ProductCard key={product.id} product={product} onClick={() => onNavigate(`/product/${product.id}`)} />
                     ))}
@@ -2806,26 +2841,20 @@ const HomePage: React.FC<any> = ({ products, onNavigate, onAddToCart, user }) =>
                 </div>
             </div>
             <div className="max-w-7xl mx-auto px-4 py-16">
-                 <h2 className="text-3xl font-serif font-bold text-center mb-12 text-brand-blue">Featured Collections</h2>
-                 <div className="grid md:grid-cols-3 gap-8 mb-20">
-                     <div className="cursor-pointer group relative overflow-hidden rounded-2xl h-80" onClick={() => onNavigate('/shop')}>
-                        <img src="https://kanvasphilippines.com/wp-content/uploads/2019/12/20191212_160636.jpg?w=2000&h=" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                            <h3 className="text-white text-2xl font-serif font-bold">Inabel Weaving</h3>
+                 <h2 className="text-3xl font-serif font-bold text-center mb-8 md:mb-12 text-brand-blue">Featured Collections</h2>
+                 <div className="flex overflow-x-auto gap-4 pb-6 -mx-4 px-4 snap-x snap-mandatory md:grid md:grid-cols-3 md:gap-8 md:overflow-visible md:pb-0 md:mx-0 md:px-0 mb-12 md:mb-20 scrollbar-hide">
+                     {[
+                        { title: "Inabel Weaving", img: "https://kanvasphilippines.com/wp-content/uploads/2019/12/20191212_160636.jpg?w=2000&h=" },
+                        { title: "Burnay Pottery", img: "https://themixedculture.com/wp-content/uploads/2013/11/burnay-photo-by-israel-formales1-e1383607294408.jpg" },
+                        { title: "Ilocos Delicacies", img: "https://thesmartlocal.ph/wp-content/uploads/2022/01/ilocano-foods-bagnet-1024x1024.jpg" }
+                     ].map((collection, index) => (
+                        <div key={index} className="flex-shrink-0 w-[85vw] sm:w-[60vw] md:w-auto h-64 md:h-80 snap-center cursor-pointer group relative overflow-hidden rounded-2xl shadow-md md:shadow-none" onClick={() => onNavigate('/shop')}>
+                            <img src={collection.img} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={collection.title} />
+                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                <h3 className="text-white text-2xl font-serif font-bold drop-shadow-md">{collection.title}</h3>
+                            </div>
                         </div>
-                     </div>
-                     <div className="cursor-pointer group relative overflow-hidden rounded-2xl h-80" onClick={() => onNavigate('/shop')}>
-                        <img src="https://themixedculture.com/wp-content/uploads/2013/11/burnay-photo-by-israel-formales1-e1383607294408.jpg" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                            <h3 className="text-white text-2xl font-serif font-bold">Burnay Pottery</h3>
-                        </div>
-                     </div>
-                     <div className="cursor-pointer group relative overflow-hidden rounded-2xl h-80" onClick={() => onNavigate('/shop')}>
-                        <img src="https://thesmartlocal.ph/wp-content/uploads/2022/01/ilocano-foods-bagnet-1024x1024.jpg" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                            <h3 className="text-white text-2xl font-serif font-bold">Ilocos Delicacies</h3>
-                        </div>
-                     </div>
+                     ))}
                  </div>
 
                  <div className="flex justify-between items-end mb-8">
@@ -2837,7 +2866,7 @@ const HomePage: React.FC<any> = ({ products, onNavigate, onAddToCart, user }) =>
                          View All <ArrowRight className="w-4 h-4" />
                      </button>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
                     {availableProducts.slice(0, 4).map((p: any) => (
                         <ProductCard key={p.id} product={p} onClick={() => onNavigate(`/product/${p.id}`)} />
                     ))}
@@ -2863,7 +2892,6 @@ export const App: React.FC = () => {
           if (u) {
               const profile = await getUserProfile(u.uid);
               if (profile) {
-                  // Check status
                   if (profile.status === 'banned') {
                       alert("Your account has been banned.");
                       auth.signOut();
@@ -2871,30 +2899,17 @@ export const App: React.FC = () => {
                       return;
                   }
                   if (profile.status === 'suspended') {
-                      // Check if expired
                       const isExpired = await checkSuspensionExpiry(u.uid);
                       if (!isExpired) {
-                          // Still suspended
-                           // We allow login but restrict access? 
-                           // Current flow alerts and logs out. 
-                           // If you want them to see dashboard to know date, we shouldn't log out.
-                           // But for now, let's keep it restricted.
                            const endDate = profile.suspensionEndDate ? new Date(profile.suspensionEndDate.seconds * 1000).toLocaleDateString() : 'indefinite';
                            alert(`Your account has been suspended until ${endDate}.`);
                            auth.signOut();
                            setUser(null);
                            return;
                       }
-                      // If expired, profile status will be updated in DB by checkSuspensionExpiry
-                      // Fetch fresh profile
                       const freshProfile = await getUserProfile(u.uid);
-                      if (freshProfile) {
-                          // Continue login with fresh data
-                          // ... assign freshProfile to vars below
-                      }
                   }
 
-                  // Re-fetch in case it was updated by expiry check
                   const updatedProfile = await getUserProfile(u.uid) || profile;
 
                   setUser({

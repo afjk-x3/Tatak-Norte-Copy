@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, ChevronLeft, User } from 'lucide-react';
 import { Conversation, ChatMessage, UserProfile } from '../types';
@@ -75,6 +74,16 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
     return otherId ? (conv.participantNames[otherId] || 'User') : 'User';
   };
 
+  const formatTime = (timestamp: any) => {
+    if (!timestamp) return '';
+    try {
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+        return '';
+    }
+  };
+
   if (!user) {
       return (
         <>
@@ -88,7 +97,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
             </button>
             
             {isOpen && (
-                <div className="fixed bottom-24 right-6 z-40 w-80 bg-white rounded-2xl shadow-2xl border border-stone-100 flex flex-col items-center justify-center p-8 text-center animate-fade-in-up">
+                <div className="fixed bottom-24 right-4 left-4 md:left-auto md:right-6 z-40 md:w-80 bg-white rounded-2xl shadow-2xl border border-stone-100 flex flex-col items-center justify-center p-8 text-center animate-fade-in-up">
                     <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mb-4 text-stone-300">
                         <MessageCircle className="w-8 h-8" />
                     </div>
@@ -114,7 +123,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-40 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-stone-100 flex flex-col overflow-hidden animate-fade-in-up" style={{ maxHeight: '600px', height: '80vh' }}>
+        <div className="fixed bottom-24 right-4 left-4 md:left-auto md:right-6 z-40 md:w-96 bg-white rounded-2xl shadow-2xl border border-stone-100 flex flex-col overflow-hidden animate-fade-in-up h-[65vh] md:h-[80vh]" style={{ maxHeight: '600px' }}>
           
           {/* Header */}
           <div className="bg-brand-blue p-4 flex items-center justify-between">
@@ -173,17 +182,20 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.senderId === user.uid ? 'justify-end' : 'justify-start'}`}
+                    className={`flex flex-col ${msg.senderId === user.uid ? 'items-end' : 'items-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-2xl p-3 text-sm leading-relaxed break-words ${
+                      className={`max-w-[85%] rounded-2xl p-3 text-sm leading-relaxed break-words shadow-sm ${
                         msg.senderId === user.uid
                           ? 'bg-brand-blue text-white rounded-br-none'
-                          : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none shadow-sm'
+                          : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none'
                       }`}
                     >
                       {msg.text}
                     </div>
+                    <span className="text-[10px] text-stone-400 mt-1 px-1">
+                        {formatTime(msg.timestamp)}
+                    </span>
                   </div>
                 ))}
                 <div ref={messagesEndRef} />

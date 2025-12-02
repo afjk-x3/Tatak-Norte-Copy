@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingBag, Menu, X, User, LogOut, LayoutDashboard, UserCircle, Store } from 'lucide-react';
 import { NAV_LINKS } from '../constants';
 import { UserRole } from '../types';
@@ -25,6 +25,39 @@ const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  const navRef = useRef<HTMLElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMenuOpen && navRef.current && !navRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isProfileOpen && profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileOpen]);
 
   const handleNavClick = (path: string) => {
     onNavigate(path);
@@ -40,7 +73,7 @@ const Navbar: React.FC<NavbarProps> = ({
   });
 
   return (
-    <nav className="sticky top-0 z-50 bg-brand-cream/80 backdrop-blur-md border-b border-stone-200">
+    <nav ref={navRef} className="sticky top-0 z-50 bg-brand-cream/80 backdrop-blur-md border-b border-stone-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
@@ -89,7 +122,7 @@ const Navbar: React.FC<NavbarProps> = ({
           {/* Actions */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             {/* User Auth */}
-            <div className="relative">
+            <div className="relative" ref={profileRef}>
               {user ? (
                 <div className="relative">
                   <button 
@@ -108,7 +141,6 @@ const Navbar: React.FC<NavbarProps> = ({
                   
                   {isProfileOpen && (
                     <>
-                      <div className="fixed inset-0 z-10" onClick={() => setIsProfileOpen(false)} />
                       <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-stone-100 py-1 z-20 animate-fade-in-up">
                         <div className="px-4 py-3 border-b border-stone-100">
                           <p className="text-xs text-stone-500">Signed in as</p>
@@ -222,40 +254,6 @@ const Navbar: React.FC<NavbarProps> = ({
                 {link.label}
               </button>
             ))}
-             <button
-                onClick={() => handleNavClick('/profile')}
-                className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${
-                  currentPath === '/profile' 
-                    ? 'bg-brand-blue text-white' 
-                    : 'text-stone-600 hover:bg-brand-light hover:text-brand-blue'
-                }`}
-              >
-                My Profile
-              </button>
-             {!isSellerOrAdmin && (
-                 <button
-                    onClick={() => handleNavClick('/seller-registration')}
-                    className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${
-                      currentPath === '/seller-registration' 
-                        ? 'bg-brand-blue text-white' 
-                        : 'text-stone-600 hover:bg-brand-light hover:text-brand-blue'
-                    }`}
-                  >
-                    Seller Registration
-                  </button>
-             )}
-            {isSellerOrAdmin && (
-               <button
-                onClick={() => handleNavClick('/seller-dashboard')}
-                className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${
-                  currentPath === '/seller-dashboard' 
-                    ? 'bg-brand-blue text-white' 
-                    : 'text-stone-600 hover:bg-brand-light hover:text-brand-blue'
-                }`}
-              >
-                Seller Dashboard
-              </button>
-            )}
           </div>
         </div>
       )}
@@ -264,4 +262,3 @@ const Navbar: React.FC<NavbarProps> = ({
 };
 
 export default Navbar;
-    
