@@ -66,11 +66,21 @@ const Navbar: React.FC<NavbarProps> = ({
 
   const isSellerOrAdmin = user?.role === 'seller' || user?.role === 'admin';
 
-  // Filter links: Hide 'Marketplace' if user is Seller or Admin (they use Dashboard/Home)
-  const filteredNavLinks = NAV_LINKS.filter(link => {
-      if (isSellerOrAdmin && link.label === 'Marketplace') return false;
-      return true;
-  });
+  // Construct Links based on role
+  let displayLinks = [...NAV_LINKS];
+
+  if (isSellerOrAdmin) {
+    // Remove 'Marketplace' for sellers/admins
+    displayLinks = displayLinks.filter(link => link.label !== 'Marketplace');
+    
+    // Add 'Dashboard' after 'Home'
+    const homeIndex = displayLinks.findIndex(l => l.label === 'Home');
+    if (homeIndex !== -1) {
+        displayLinks.splice(homeIndex + 1, 0, { label: 'Dashboard', path: '/seller-dashboard' });
+    } else {
+        displayLinks.push({ label: 'Dashboard', path: '/seller-dashboard' });
+    }
+  }
 
   return (
     <nav ref={navRef} className="sticky top-0 z-50 bg-brand-cream/80 backdrop-blur-md border-b border-stone-200">
@@ -91,7 +101,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
           {/* Desktop Nav */}
           <div className="hidden md:flex space-x-8 items-center">
-            {filteredNavLinks.map((link) => (
+            {displayLinks.map((link) => (
               <button
                 key={link.path}
                 onClick={() => onNavigate(link.path)}
@@ -104,19 +114,6 @@ const Navbar: React.FC<NavbarProps> = ({
                 {link.label}
               </button>
             ))}
-            {isSellerOrAdmin && (
-              <button
-                onClick={() => onNavigate('/seller-dashboard')}
-                className={`text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${
-                  currentPath === '/seller-dashboard' 
-                    ? 'text-brand-accent font-bold' 
-                    : 'text-stone-600 hover:text-brand-accent'
-                }`}
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                Dashboard
-              </button>
-            )}
           </div>
 
           {/* Actions */}
@@ -182,7 +179,7 @@ const Navbar: React.FC<NavbarProps> = ({
                             }}
                             className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2"
                           >
-                            <LayoutDashboard className="w-4 h-4" /> Dashboard
+                            <LayoutDashboard className="w-4 h-4" /> Seller Dashboard
                           </button>
                         )}
                         <div className="border-t border-stone-100 my-1"></div>
@@ -241,7 +238,7 @@ const Navbar: React.FC<NavbarProps> = ({
       {isMenuOpen && (
         <div className="md:hidden bg-brand-cream border-t border-stone-200">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {filteredNavLinks.map((link) => (
+            {displayLinks.map((link) => (
               <button
                 key={link.path}
                 onClick={() => handleNavClick(link.path)}

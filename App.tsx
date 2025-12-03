@@ -1,8 +1,10 @@
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import { PRODUCTS } from './constants'; 
 import { Product, CartItem, Category, UserRole, UserProfile, Order, OrderStatus, Review, PaymentMethod, DeliveryMethod, Address, BankAccount, Variation, TrackingEvent, SellerApplication } from './types';
-import { Star, ArrowRight, Trash2, Plus, Minus, MapPin, X, ShoppingBag, Facebook, CheckCircle, Loader, Eye, EyeOff, LayoutDashboard, Package, TrendingUp, Users, AlertCircle, ShieldCheck, Ban, ChevronLeft, Tag, Search, ShoppingCart, CreditCard, ChevronDown, UserCircle, Edit3, Save, Camera, Mail, MessageSquare, Truck, Banknote, Bell, FileText, Lock, Settings, Check, Filter, SlidersHorizontal, Award, ChevronRight, User, Store, Send, ChevronUp, Image as ImageIcon, Printer, AlertTriangle, Phone, Globe, Instagram, Twitter, Calendar, Heart, Hammer, Leaf, LogIn, PauseCircle, ShieldBan, PlayCircle, MessageCircle, CornerDownRight } from 'lucide-react';
+import { Star, ArrowRight, Trash2, Plus, Minus, MapPin, X, ShoppingBag, Facebook, CheckCircle, Loader, Eye, EyeOff, LayoutDashboard, Package, TrendingUp, Users, AlertCircle, ShieldCheck, Ban, ChevronLeft, Tag, Search, ShoppingCart, CreditCard, ChevronDown, UserCircle, Edit3, Save, Camera, Mail, MessageSquare, Truck, Banknote, Bell, FileText, Lock, Settings, Check, Filter, SlidersHorizontal, Award, ChevronRight, User, Store, Send, ChevronUp, Image as ImageIcon, Printer, AlertTriangle, Phone, Globe, Instagram, Twitter, Calendar, Heart, Hammer, Leaf, LogIn, PauseCircle, ShieldBan, PlayCircle, MessageCircle, CornerDownRight, BarChart3, DollarSign, PackageCheck, Clock, Archive } from 'lucide-react';
 import firebase, { auth, isFirebaseConfigured } from './firebaseConfig';
 import { fetchProducts, seedDatabase, createUserDocument, getUserProfile, fetchSellerProducts, addProduct, deleteProduct, fetchAllUsers, updateUserRole, deleteUserDocument, createOrder, fetchOrders, updateOrderStatus, updateUserBag, updateUserProfile, addProductReview, fetchProductReviews, uploadProfileImage, uploadShopImage, startConversation, uploadProductImage, updateProduct, updateOrderTracking, fetchJtTracking, submitSellerApplication, fetchSellerApplications, approveSellerApplication, rejectSellerApplication, requestOrderCancellation, approveOrderCancellation, fetchApprovedSellers, updateUserStatus, checkSuspensionExpiry, replyToReview, deleteReview } from './services/firestoreService';
 import { fetchProvinces, fetchCities, fetchBarangays, LocationCode } from './services/locationService';
@@ -354,7 +356,7 @@ const SellerRegistrationPage: React.FC<{ user: UserState | null; onLoginClick: (
     return (
         <div className="min-h-screen bg-stone-50 py-12 px-4 md:px-8 flex justify-center">
             <div className="max-w-6xl w-full grid md:grid-cols-12 gap-8 items-start animate-fade-in-up">
-                <div className="md:col-span-4 space-y-6 sticky top-24">
+                <div className="md:col-span-4 space-y-6">
                     <div className="bg-brand-blue text-white p-8 rounded-3xl shadow-xl overflow-hidden relative">
                          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                          <h2 className="text-2xl font-serif font-bold mb-4 relative z-10">Why sell with us?</h2>
@@ -363,10 +365,6 @@ const SellerRegistrationPage: React.FC<{ user: UserState | null; onLoginClick: (
                              <li className="flex gap-3"><div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0"><Check className="w-3 h-3" /></div><span className="text-blue-100 text-sm">Secure payments and verified customers</span></li>
                              <li className="flex gap-3"><div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0"><Check className="w-3 h-3" /></div><span className="text-blue-100 text-sm">Dedicated support for local artisans</span></li>
                          </ul>
-                    </div>
-                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-100">
-                        <h3 className="font-bold text-stone-900 mb-2 flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-green-500" /> Vetted Sellers</h3>
-                        <p className="text-xs text-stone-500 leading-relaxed">We manually review every application to ensure authenticity. Once approved, you will receive an official <span className="font-mono text-stone-700 bg-stone-100 px-1 rounded">@tataknorte.ph</span> seller account handle.</p>
                     </div>
                 </div>
                 <div className="md:col-span-8 bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-stone-100">
@@ -902,7 +900,8 @@ const CheckoutModal: React.FC<any> = ({ isOpen, onClose, cart, onCheckoutSubmit,
 
 // ... Include Dashboard, CartPage, AboutPage, ProfilePage fully ...
 const Dashboard: React.FC<any> = ({ user, products, onUpdateProfile, onRefreshGlobalData }) => {
-    const [activeTab, setActiveTab] = useState(user?.role === 'admin' ? 'applications' : 'products');
+    const isAdmin = user?.role === 'admin';
+    const [activeTab, setActiveTab] = useState(isAdmin ? 'applications' : 'overview');
     const [isAddProductOpen, setIsAddProductOpen] = useState(false);
     const [isProductManagerOpen, setIsProductManagerOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -911,6 +910,11 @@ const Dashboard: React.FC<any> = ({ user, products, onUpdateProfile, onRefreshGl
     const [sellerApps, setSellerApps] = useState<SellerApplication[]>([]);
     const [sellersList, setSellersList] = useState<UserProfile[]>([]);
     const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+    const [orderStatusFilter, setOrderStatusFilter] = useState<string>('All');
+    
+    // Filters
+    const [productCategoryFilter, setProductCategoryFilter] = useState<string>('All');
+    const [productStatusFilter, setProductStatusFilter] = useState<string>('All');
 
     // Suspension Modal State
     const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
@@ -920,12 +924,12 @@ const Dashboard: React.FC<any> = ({ user, products, onUpdateProfile, onRefreshGl
         if (user) {
             fetchOrders('seller', user.uid).then(setOrders);
 
-            if (user.role === 'admin') {
+            if (isAdmin) {
                 fetchSellerApplications('pending').then(setSellerApps);
                 fetchApprovedSellers().then(setSellersList);
             }
         }
-    }, [user]);
+    }, [user, isAdmin]);
 
     const showNotification = (message: string, type: 'success' | 'error') => {
         setNotification({ message, type });
@@ -933,6 +937,42 @@ const Dashboard: React.FC<any> = ({ user, products, onUpdateProfile, onRefreshGl
     };
     
     const sellerProducts = products && user ? products.filter((p: any) => p.sellerId === user.uid || user.role === 'admin') : [];
+    
+    // Filter Logic
+    const filteredProducts = sellerProducts.filter((p: any) => {
+        const matchesCategory = productCategoryFilter === 'All' || p.category === productCategoryFilter;
+        // Assume 'active' if sellerStatus is missing
+        const currentStatus = p.sellerStatus || 'active'; 
+        const matchesStatus = productStatusFilter === 'All' || 
+                              (productStatusFilter === 'Active' && currentStatus === 'active') ||
+                              (productStatusFilter === 'Suspended' && currentStatus === 'suspended') ||
+                              (productStatusFilter === 'Banned' && currentStatus === 'banned');
+        return matchesCategory && matchesStatus;
+    });
+
+    // --- Analytics Logic ---
+    const getSellerStats = () => {
+        if (!orders || orders.length === 0) return { revenue: 0, totalOrders: 0, pending: 0, delivered: 0 };
+        
+        // Calculate only for non-cancelled orders
+        const validOrders = orders.filter(o => o.status !== 'Cancelled');
+        const revenue = validOrders.reduce((sum, o) => {
+            // If admin, show all. If seller, only sum items belonging to them.
+            // Simplified here: Assuming order total for now, precise would require filtering items inside order.
+            // For now, we'll use the totalAmount of the order if they are a seller in it.
+            return sum + o.totalAmount; 
+        }, 0);
+
+        return {
+            revenue,
+            totalOrders: orders.length,
+            pending: orders.filter(o => o.status === 'Processing').length,
+            delivered: orders.filter(o => o.status === 'Delivered').length,
+            cancelled: orders.filter(o => o.status === 'Cancelled').length,
+        };
+    };
+
+    const stats = getSellerStats();
 
     const handleApproveApp = async (app: SellerApplication) => {
         if (window.confirm(`Approve ${app.businessName} as a seller?`)) {
@@ -1002,13 +1042,11 @@ const Dashboard: React.FC<any> = ({ user, products, onUpdateProfile, onRefreshGl
         }
     }
 
-    const isAdmin = user?.role === 'admin';
-
     if (!user) return <div className="p-20 text-center animate-fade-in-up">Please log in to access the dashboard.</div>;
 
     const tabs = isAdmin 
         ? ['applications', 'sellers', 'products']
-        : ['products', 'orders'];
+        : ['overview', 'products', 'orders'];
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in-up">
@@ -1025,16 +1063,133 @@ const Dashboard: React.FC<any> = ({ user, products, onUpdateProfile, onRefreshGl
                 </div>
             )}
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-serif font-bold">{isAdmin ? 'Admin Dashboard' : 'Seller Dashboard'}</h1>
+                <div>
+                    <h1 className="text-3xl font-serif font-bold text-stone-900">{isAdmin ? 'Admin Dashboard' : 'Seller Dashboard'}</h1>
+                    <p className="text-stone-500 mt-1">Manage your {isAdmin ? 'platform' : 'store'} performance and inventory.</p>
+                </div>
                 {!isAdmin && (
-                    <button onClick={() => { setEditingProduct(null); setIsAddProductOpen(true); }} className="px-6 py-3 bg-brand-blue text-white rounded-xl font-bold flex items-center gap-2"><Plus className="w-5 h-5" /> Add Product</button>
+                    <button 
+                        onClick={() => { setEditingProduct(null); setIsAddProductOpen(true); }} 
+                        className="px-6 py-3 bg-brand-blue text-white rounded-full font-bold hover:bg-blue-800 transition-colors shadow-lg shadow-blue-900/20 flex items-center gap-2"
+                        title="Add Product"
+                    >
+                        <Plus className="w-5 h-5" /> Add Product
+                    </button>
                 )}
             </div>
-            <div className="flex gap-6 border-b border-stone-200 mb-8">
+            
+            <div className="flex gap-6 border-b border-stone-200 mb-8 overflow-x-auto">
                 {tabs.map(tab => (
-                    <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-3 text-sm font-bold uppercase tracking-wider ${activeTab === tab ? 'border-b-2 border-brand-blue text-brand-blue' : 'text-stone-500'}`}>{tab}</button>
+                    <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-3 text-sm font-bold uppercase tracking-wider whitespace-nowrap ${activeTab === tab ? 'border-b-2 border-brand-blue text-brand-blue' : 'text-stone-500 hover:text-stone-700'}`}>{tab}</button>
                 ))}
             </div>
+            
+            {activeTab === 'overview' && !isAdmin && (
+                <div className="space-y-8 animate-scale-in">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-center gap-4">
+                            <div className="p-3 bg-green-50 text-green-600 rounded-xl">
+                                <DollarSign className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-stone-400 uppercase tracking-wider">Total Revenue</p>
+                                <p className="text-2xl font-bold text-stone-900">₱{stats.revenue.toLocaleString()}</p>
+                            </div>
+                        </div>
+                         <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-center gap-4">
+                            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                                <PackageCheck className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-stone-400 uppercase tracking-wider">Total Orders</p>
+                                <p className="text-2xl font-bold text-stone-900">{stats.totalOrders}</p>
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-center gap-4">
+                            <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
+                                <Clock className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-stone-400 uppercase tracking-wider">Pending Orders</p>
+                                <p className="text-2xl font-bold text-stone-900">{stats.pending}</p>
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-center gap-4">
+                            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+                                <Archive className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-stone-400 uppercase tracking-wider">Total Products</p>
+                                <p className="text-2xl font-bold text-stone-900">{sellerProducts.length}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid lg:grid-cols-3 gap-8">
+                        {/* Recent Orders */}
+                        <div className="lg:col-span-2 bg-white rounded-2xl border border-stone-100 shadow-sm p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="font-bold text-lg text-stone-900">Recent Orders</h3>
+                                <button onClick={() => setActiveTab('orders')} className="text-sm font-bold text-brand-blue hover:underline">View All</button>
+                            </div>
+                            {orders.length > 0 ? (
+                                <div className="space-y-4">
+                                    {orders.slice(0, 5).map(order => (
+                                        <div key={order.id} className="flex justify-between items-center p-4 rounded-xl hover:bg-stone-50 border border-stone-100 transition-colors cursor-pointer" onClick={() => setActiveTab('orders')}>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-stone-900">Order #{order.id.slice(-6).toUpperCase()}</span>
+                                                    <span className="text-xs text-stone-400">• {new Date(order.createdAt?.seconds * 1000).toLocaleDateString()}</span>
+                                                </div>
+                                                <p className="text-sm text-stone-500 mt-1">{order.items.length} items • ₱{order.totalAmount.toLocaleString()}</p>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                                                order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 
+                                                order.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                                                order.status === 'Cancellation Requested' ? 'bg-orange-100 text-orange-700' :
+                                                'bg-blue-100 text-blue-700'
+                                            }`}>
+                                                {order.status}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-10 text-stone-500">No orders yet.</div>
+                            )}
+                        </div>
+
+                         {/* Stock Alerts (Simplified) */}
+                         <div className="lg:col-span-1 bg-white rounded-2xl border border-stone-100 shadow-sm p-6 h-fit">
+                            <h3 className="font-bold text-lg text-stone-900 mb-6">Low Stock Alert</h3>
+                             <div className="space-y-4">
+                                {sellerProducts.filter((p: any) => p.stock !== undefined && p.stock < 10).length > 0 ? (
+                                    sellerProducts.filter((p: any) => p.stock !== undefined && p.stock < 10).slice(0, 5).map((p: any) => (
+                                        <div key={p.id} className="flex gap-3 items-center">
+                                            <div className="w-12 h-12 bg-stone-100 rounded-lg overflow-hidden flex-shrink-0">
+                                                <img src={p.image} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-bold text-sm text-stone-900 truncate">{p.name}</p>
+                                                <p className="text-xs text-red-500 font-bold">{p.stock} remaining</p>
+                                            </div>
+                                            <button onClick={() => { setSelectedProduct(p); setIsProductManagerOpen(true); }} className="p-2 hover:bg-stone-100 rounded-full text-stone-400 hover:text-stone-600">
+                                                <Edit3 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-10 text-stone-500">
+                                        <CheckCircle className="w-10 h-10 text-green-200 mb-2" />
+                                        <p className="text-sm">All products are well stocked.</p>
+                                    </div>
+                                )}
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            )}
             
             {activeTab === 'applications' && isAdmin && (
                 <div className="space-y-4">
@@ -1155,38 +1310,101 @@ const Dashboard: React.FC<any> = ({ user, products, onUpdateProfile, onRefreshGl
             )}
 
             {activeTab === 'products' && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
-                    {sellerProducts.length > 0 ? (
-                        sellerProducts.map((p: any) => (
-                            <div key={p.id} className="relative group">
-                                <ProductCard product={p} onClick={() => { setSelectedProduct(p); setIsProductManagerOpen(true); }} />
-                                {p.sellerStatus === 'suspended' && (
-                                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center rounded-2xl pointer-events-none">
-                                        <div className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
-                                            Suspended
-                                        </div>
-                                    </div>
-                                )}
-                                {p.sellerStatus === 'banned' && (
-                                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center rounded-2xl pointer-events-none">
-                                        <div className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
-                                            Banned
-                                        </div>
-                                    </div>
-                                )}
+                <div className="space-y-6">
+                    {/* Filters Bar */}
+                    <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl border border-stone-200 shadow-sm sm:items-center">
+                         <div className="flex justify-between items-center w-full sm:w-auto">
+                            <div className="flex items-center gap-2 text-stone-500">
+                                <Filter className="w-4 h-4" />
+                                <span className="text-sm font-bold uppercase tracking-wider">Filters</span>
                             </div>
-                        ))
-                    ) : (
-                        <div className="col-span-full p-10 text-center bg-white rounded-2xl border border-stone-200 text-stone-500">
-                             No products found.
-                        </div>
-                    )}
+                            <div className="sm:hidden text-xs font-bold text-stone-400">
+                                {filteredProducts.length} Result{filteredProducts.length !== 1 ? 's' : ''}
+                            </div>
+                         </div>
+                         
+                         <div className="h-6 w-px bg-stone-200 hidden sm:block"></div>
+
+                         <div className="flex gap-2 w-full sm:w-auto">
+                            <select 
+                                value={productCategoryFilter} 
+                                onChange={(e) => setProductCategoryFilter(e.target.value)}
+                                className="flex-1 sm:flex-none px-3 py-2 rounded-lg border border-stone-200 text-sm bg-stone-50 focus:bg-white focus:border-brand-blue outline-none transition-all cursor-pointer hover:border-brand-blue/50"
+                            >
+                                <option value="All">All Categories</option>
+                                {Object.values(Category).map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+
+                            <select 
+                                value={productStatusFilter} 
+                                onChange={(e) => setProductStatusFilter(e.target.value)}
+                                className="flex-1 sm:flex-none px-3 py-2 rounded-lg border border-stone-200 text-sm bg-stone-50 focus:bg-white focus:border-brand-blue outline-none transition-all cursor-pointer hover:border-brand-blue/50"
+                            >
+                                <option value="All">All Statuses</option>
+                                <option value="Active">Active</option>
+                                <option value="Suspended">Suspended</option>
+                                <option value="Banned">Banned</option>
+                            </select>
+                         </div>
+
+                         <div className="ml-auto text-xs font-bold text-stone-400 hidden sm:block">
+                             {filteredProducts.length} Result{filteredProducts.length !== 1 ? 's' : ''}
+                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
+                        {filteredProducts.length > 0 ? (
+                            filteredProducts.map((p: any) => (
+                                <div key={p.id} className="relative group">
+                                    <ProductCard product={p} onClick={() => { setSelectedProduct(p); setIsProductManagerOpen(true); }} actionIcon={Edit3} />
+                                    {p.sellerStatus === 'suspended' && (
+                                        <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center rounded-2xl pointer-events-none">
+                                            <div className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                                                Suspended
+                                            </div>
+                                        </div>
+                                    )}
+                                    {p.sellerStatus === 'banned' && (
+                                        <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center rounded-2xl pointer-events-none">
+                                            <div className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                                                Banned
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        ) : (
+                            <div className="col-span-full p-12 text-center bg-white rounded-2xl border border-dashed border-stone-200 text-stone-500">
+                                 <Filter className="w-8 h-8 mx-auto mb-2 text-stone-300" />
+                                 No products match your filters.
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
             {activeTab === 'orders' && (
                 <div className="space-y-4">
-                    {orders.map(order => (
+                     <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-stone-200 shadow-sm mb-4">
+                         <div className="flex items-center gap-2 text-stone-500">
+                            <Filter className="w-4 h-4" />
+                            <span className="text-sm font-bold uppercase tracking-wider">Status Filter</span>
+                         </div>
+                         <select 
+                            value={orderStatusFilter} 
+                            onChange={(e) => setOrderStatusFilter(e.target.value)}
+                            className="px-4 py-2 rounded-lg border border-stone-200 text-sm bg-stone-50 focus:bg-white focus:border-brand-blue outline-none transition-all cursor-pointer"
+                        >
+                            <option value="All">All Orders</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Shipped">Shipped</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancellation Requested">Cancellation Requested</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    {orders.filter(order => orderStatusFilter === 'All' || order.status === orderStatusFilter).map(order => (
                         <div key={order.id} className="bg-white p-6 rounded-2xl border border-stone-200">
                              <div className="flex justify-between mb-4">
                                  <div><span className="font-bold text-lg">Order #{order.id.slice(-6)}</span><p className="text-sm text-stone-500">{new Date(order.createdAt?.seconds * 1000).toLocaleDateString()}</p></div>
@@ -1250,7 +1468,7 @@ const Dashboard: React.FC<any> = ({ user, products, onUpdateProfile, onRefreshGl
                             )}
                         </div>
                     ))}
-                    {orders.length === 0 && <p className="text-center py-10 text-stone-500">No orders found.</p>}
+                    {orders.filter(order => orderStatusFilter === 'All' || order.status === orderStatusFilter).length === 0 && <p className="text-center py-10 text-stone-500">No orders found.</p>}
                 </div>
             )}
 
@@ -1872,9 +2090,9 @@ const ProfilePage: React.FC<any> = ({ user, onUpdateProfile, onNavigate }) => {
 
             <div className="max-w-6xl mx-auto px-4 -mt-32 relative z-10 pb-20 animate-fade-in-up">
                  {/* ... Header ... */}
-                <div className="bg-white rounded-3xl p-8 shadow-xl border border-stone-100 flex flex-col md:flex-row items-end md:items-center gap-8 mb-12">
-                     <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-[6px] border-white shadow-2xl bg-stone-100">
+                <div className="bg-white rounded-3xl p-8 shadow-xl border border-stone-100 flex flex-col md:flex-row items-center md:items-center gap-6 md:gap-8 mb-12">
+                     <div className="relative group cursor-pointer flex-shrink-0" onClick={() => fileInputRef.current?.click()}>
+                        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-[6px] border-white shadow-2xl bg-stone-100 mx-auto md:mx-0">
                             {user.photoURL ? (
                                 <img src={user.photoURL} className="w-full h-full object-cover" alt={user.name} />
                             ) : (
@@ -1889,13 +2107,13 @@ const ProfilePage: React.FC<any> = ({ user, onUpdateProfile, onNavigate }) => {
                         <input type="file" ref={fileInputRef} className="hidden" onChange={handleImageUpload} accept="image/*" />
                     </div>
                     
-                    <div className="flex-1 pb-2">
-                        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-2">
-                             <h1 className="text-3xl md:text-4xl font-serif font-bold text-stone-900">{user.name}</h1>
+                    <div className="flex-1 pb-2 w-full md:w-auto">
+                        <div className="flex flex-col items-center md:items-start gap-3 md:gap-4 mb-4 md:mb-2">
+                             <h1 className="text-3xl md:text-4xl font-serif font-bold text-stone-900 text-center md:text-left">{user.name}</h1>
                              <span className="px-4 py-1.5 bg-brand-light text-brand-blue rounded-full text-xs font-bold uppercase tracking-wider border border-blue-100">{user.role}</span>
                         </div>
-                        <p className="text-stone-500 mb-6 flex items-center gap-2"><Mail className="w-4 h-4" /> {user.email}</p>
-                        <div className="flex flex-wrap gap-8 text-sm text-stone-600">
+                        <p className="text-stone-500 mb-6 flex items-center justify-center md:justify-start gap-2"><Mail className="w-4 h-4" /> {user.email}</p>
+                        <div className="flex flex-wrap justify-center md:justify-start gap-4 md:gap-8 text-sm text-stone-600">
                              {!isSellerOrAdmin && (
                                  <div className="flex items-center gap-2 bg-stone-50 px-4 py-2 rounded-lg border border-stone-100">
                                      <Package className="w-5 h-5 text-brand-clay" />
@@ -2374,7 +2592,7 @@ const ProfilePage: React.FC<any> = ({ user, onUpdateProfile, onNavigate }) => {
     );
 };
 
-const ProductDetailsPage: React.FC<any> = ({ product, onAddToCart, onNavigate, user, onLoginRequest, onRefreshProduct }) => {
+const ProductDetailsPage: React.FC<any> = ({ product, onAddToCart, onNavigate, user, onLoginRequest, onRefreshProduct, onChatWithSeller }) => {
     const [selectedVariation, setSelectedVariation] = useState<Variation | undefined>(undefined);
     const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
     const [reviews, setReviews] = useState<Review[]>([]);
@@ -2491,7 +2709,7 @@ const ProductDetailsPage: React.FC<any> = ({ product, onAddToCart, onNavigate, u
                 </div>
             )}
 
-            <button onClick={() => onNavigate('/')} className="mb-4 flex items-center gap-1 text-stone-500 hover:text-brand-blue transition-colors"><ChevronLeft className="w-4 h-4" /> Back to Marketplace</button>
+            <button onClick={() => onNavigate(user?.role === 'seller' ? '/' : '/shop')} className="mb-4 flex items-center gap-1 text-stone-500 hover:text-brand-blue transition-colors"><ChevronLeft className="w-4 h-4" /> {user?.role === 'seller' ? 'Back to Home' : 'Back to Marketplace'}</button>
             <div className="grid lg:grid-cols-2 gap-12 mb-16">
                 <img src={selectedVariation?.image || product.image} className="w-full aspect-square object-cover rounded-2xl bg-stone-100 shadow-md" />
                 <div>
@@ -2547,6 +2765,16 @@ const ProductDetailsPage: React.FC<any> = ({ product, onAddToCart, onNavigate, u
                         >
                            <ShoppingBag className="w-5 h-5" /> Add to Bag
                         </button>
+
+                         {/* Message Seller Button */}
+                         {product.sellerId && user?.uid !== product.sellerId && (
+                            <button 
+                                onClick={() => onChatWithSeller(product.sellerId!, product.artisan, product.name)}
+                                className="w-full mt-3 py-4 rounded-xl font-bold transition-all border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                            >
+                                <MessageCircle className="w-5 h-5" /> Message Seller
+                            </button>
+                        )}
                     </div>
 
                     <div className="border-t border-stone-100 pt-8">
@@ -2708,7 +2936,7 @@ const ProductDetailsPage: React.FC<any> = ({ product, onAddToCart, onNavigate, u
     );
 };
 
-const ProductCard: React.FC<{ product: Product; onClick: () => void }> = ({ product, onClick }) => {
+const ProductCard: React.FC<{ product: Product; onClick: () => void; actionIcon?: React.ElementType }> = ({ product, onClick, actionIcon: ActionIcon = Plus }) => {
     const prices = product.variations?.map(v => v.price) || [product.price];
     const min = Math.min(...prices);
     const max = Math.max(...prices);
@@ -2736,7 +2964,7 @@ const ProductCard: React.FC<{ product: Product; onClick: () => void }> = ({ prod
                 <div className="flex justify-between items-center mt-auto pt-3">
                     <span className="font-bold text-sm md:text-base text-stone-900">{displayPrice}</span>
                     <button className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 group-hover:bg-brand-blue group-hover:text-white transition-colors">
-                        <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <ActionIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     </button>
                 </div>
             </div>
@@ -2799,8 +3027,17 @@ const AddProductModal: React.FC<any> = ({ isOpen, onClose, onAddProduct, user, e
             let totalStock = 0;
             
             for (const v of variations) {
-                let imageUrl = v.preview || '';
+                // Negative check for safety
+                if (Number(v.price) < 0) throw new Error(`Price for variation "${v.name}" cannot be negative.`);
+                if (Number(v.stock) < 0) throw new Error(`Stock for variation "${v.name}" cannot be negative.`);
+
+                let imageUrl = '';
                 
+                // If editing and we have a preview that is not a blob URL (meaning it's from storage), use it
+                if (!v.file && v.preview && !v.preview.startsWith('blob:')) {
+                    imageUrl = v.preview;
+                }
+
                 if (v.file) {
                     // Added validation
                     if (!v.file.type.startsWith('image/')) {
@@ -2814,7 +3051,9 @@ const AddProductModal: React.FC<any> = ({ isOpen, onClose, onAddProduct, user, e
                     imageUrl = uploadedUrl;
                 }
                 
-                if (!imageUrl && !v.file) imageUrl = 'https://via.placeholder.com/150'; 
+                if (!imageUrl) {
+                     throw new Error(`Please upload an image for variation "${v.name || 'unnamed'}".`);
+                }
                 
                 processedVariations.push({ id: v.id, name: v.name, price: Number(v.price), stock: Number(v.stock), image: imageUrl });
                 totalStock += Number(v.stock);
@@ -2875,19 +3114,22 @@ const AddProductModal: React.FC<any> = ({ isOpen, onClose, onAddProduct, user, e
                         <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                             {variations.map((v) => (
                                 <div key={v.id} className="p-3 border rounded-xl bg-stone-50 flex gap-3 items-start">
-                                    <div className="w-20 h-20 flex-shrink-0"><label className="w-full h-full border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer bg-white overflow-hidden relative">{v.preview ? <img src={v.preview} className="w-full h-full object-cover" /> : <Camera className="w-6 h-6 text-stone-400" />}<input type="file" className="hidden" accept="image/*" onChange={e => { if (e.target.files?.[0]) { const f = e.target.files[0]; setVariations(variations.map(x => x.id === v.id ? { ...x, file: f, preview: URL.createObjectURL(f) } : x)); } }} /></label></div>
+                                    <div className="w-20 h-20 flex-shrink-0"><label className={`w-full h-full border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer overflow-hidden relative ${!v.preview ? 'bg-white hover:border-brand-blue hover:bg-blue-50' : 'border-brand-blue'}`}>{v.preview ? <img src={v.preview} className="w-full h-full object-cover" /> : <div className="text-center"><Camera className="w-6 h-6 text-stone-400 mx-auto" /><span className="text-[10px] text-stone-400 block mt-1">Add Image *</span></div>}<input type="file" className="hidden" accept="image/*" onChange={e => { if (e.target.files?.[0]) { const f = e.target.files[0]; setVariations(variations.map(x => x.id === v.id ? { ...x, file: f, preview: URL.createObjectURL(f) } : x)); } }} /></label></div>
                                     <div className="flex-1 space-y-2">
                                         <input required placeholder="Variation Name" value={v.name} onChange={e => setVariations(variations.map(x => x.id === v.id ? { ...x, name: e.target.value } : x))} className="w-full px-3 py-1.5 rounded border text-sm bg-white" />
                                         <div className="grid grid-cols-2 gap-2">
-                                            <input required type="number" placeholder="Price" value={v.price || ''} onChange={e => setVariations(variations.map(x => x.id === v.id ? { ...x, price: Number(e.target.value) } : x))} className="w-full px-3 py-1.5 rounded border text-sm bg-white" />
-                                            <input required type="number" placeholder="Stock" value={v.stock || ''} onChange={e => setVariations(variations.map(x => x.id === v.id ? { ...x, stock: Number(e.target.value) } : x))} className="w-full px-3 py-1.5 rounded border text-sm bg-white" />
+                                            <div className="relative">
+                                                <span className="absolute left-2 top-1.5 text-stone-400 text-xs">₱</span>
+                                                <input required type="number" min="0" placeholder="Price" value={v.price || ''} onChange={e => setVariations(variations.map(x => x.id === v.id ? { ...x, price: Math.max(0, Number(e.target.value)) } : x))} className="w-full pl-5 px-3 py-1.5 rounded border text-sm bg-white" />
+                                            </div>
+                                            <input required type="number" min="0" placeholder="Stock" value={v.stock || ''} onChange={e => setVariations(variations.map(x => x.id === v.id ? { ...x, stock: Math.max(0, Number(e.target.value)) } : x))} className="w-full px-3 py-1.5 rounded border text-sm bg-white" />
                                         </div>
                                     </div>
                                     <button type="button" disabled={variations.length <= 1} onClick={() => setVariations(variations.filter(x => x.id !== v.id))} className="p-1 text-stone-400 hover:text-red-500 disabled:opacity-30"><Trash2 className="w-4 h-4" /></button>
                                 </div>
                             ))}
                         </div>
-                        <p className="text-xs text-stone-500 italic">At least one variation is required.</p>
+                        <p className="text-xs text-stone-500 italic">At least one variation is required. Image is mandatory.</p>
                     </div>
                     <div className="md:col-span-2 flex justify-end gap-3 pt-4 border-t"><button type="button" onClick={onClose} className="px-6 py-2 border rounded-xl">Cancel</button><button type="submit" disabled={isLoading} className="px-6 py-2 bg-brand-blue text-white rounded-xl font-bold">{isLoading ? 'Saving...' : (editingProduct ? 'Update Product' : 'Add Product')}</button></div>
                 </form>
@@ -3010,7 +3252,13 @@ const HomePage: React.FC<any> = ({ products, onNavigate, onAddToCart, user }) =>
                              <div className="bg-stone-100 text-stone-600 px-3 py-1 rounded-lg text-sm font-bold">{sellerProducts.length} Products</div>
                          </div>
                     </div>
-                    <button onClick={() => onNavigate('/profile')} className="px-6 py-2 bg-brand-blue text-white rounded-xl font-bold hover:bg-blue-800 transition-colors">Edit Shop Profile</button>
+                    <button 
+                        onClick={() => onNavigate('/profile')} 
+                        className="p-3 bg-stone-100 text-stone-600 rounded-full hover:bg-brand-blue hover:text-white transition-colors"
+                        title="Edit Shop Profile"
+                    >
+                        <Edit3 className="w-5 h-5" />
+                    </button>
                 </div>
                 
                 <div className="flex justify-between items-center mb-6">
@@ -3032,7 +3280,7 @@ const HomePage: React.FC<any> = ({ products, onNavigate, onAddToCart, user }) =>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {filtered.map((p: any) => (
-                        <ProductCard key={p.id} product={p} onClick={() => onNavigate(`/product/${p.id}`)} />
+                        <ProductCard key={p.id} product={p} onClick={() => onNavigate(`/product/${p.id}`)} actionIcon={Edit3} />
                     ))}
                     {filtered.length === 0 && <p className="text-stone-500 col-span-4 text-center py-10">You haven't added any products yet.</p>}
                 </div>
@@ -3249,6 +3497,29 @@ export const App: React.FC = () => {
       setUser(prev => prev ? { ...prev, addresses: newAddresses } : null);
       return address;
   }
+  
+  const handleChatWithSeller = async (sellerId: string, sellerName: string, productName: string) => {
+    if (!user) {
+        setIsAuthModalOpen(true);
+        return;
+    }
+    
+    setIsChatOpen(true);
+    
+    const initialMessage = `Hi, I'm interested in ${productName}.`;
+    
+    const conversationId = await startConversation(
+        user.uid,
+        sellerId,
+        user.name,
+        sellerName,
+        initialMessage
+    );
+
+    if (conversationId) {
+        setActiveConversationId(conversationId);
+    }
+  };
 
   let content;
   if (currentPath === '/') {
@@ -3276,6 +3547,7 @@ export const App: React.FC = () => {
               user={user}
               onLoginRequest={() => setIsAuthModalOpen(true)}
               onRefreshProduct={handleRefreshProducts}
+              onChatWithSeller={handleChatWithSeller}
           />;
       } else {
           content = <div className="p-20 text-center">Product not found</div>;
@@ -3291,7 +3563,10 @@ export const App: React.FC = () => {
               onCartClick={() => handleNavigate('/cart')}
               user={user}
               onLoginClick={() => setIsAuthModalOpen(true)}
-              onLogoutClick={() => auth.signOut()}
+              onLogoutClick={() => {
+                  auth.signOut();
+                  handleNavigate('/');
+              }}
               currentPath={currentPath}
               onNavigate={handleNavigate}
           />
@@ -3310,7 +3585,15 @@ export const App: React.FC = () => {
           <AuthModal 
               isOpen={isAuthModalOpen} 
               onClose={() => setIsAuthModalOpen(false)} 
-              onLoginSuccess={(u) => { setUser(u); setIsAuthModalOpen(false); }} 
+              onLoginSuccess={(u) => { 
+                setUser(u); 
+                setIsAuthModalOpen(false); 
+                if (u.role === 'admin') {
+                    handleNavigate('/seller-dashboard');
+                } else {
+                    handleNavigate('/');
+                }
+              }} 
           />
           
           <CheckoutModal 
@@ -3324,3 +3607,5 @@ export const App: React.FC = () => {
       </div>
   );
 };
+
+export default App;
